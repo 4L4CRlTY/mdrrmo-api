@@ -9,14 +9,14 @@ WORKDIR /var/www/html
 COPY public/ public/
 COPY src/ src/
 COPY test-db.php ./
-COPY docker-start.sh /usr/local/bin/mdrrmo-start
 
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf \
-    && printf '%s\n' 'ServerName localhost' '<Directory /var/www/html/public>' \
-         'Options -Indexes' 'CGIPassAuth On' '</Directory>' > /etc/apache2/conf-available/mdrrmo.conf \
-    && a2enconf mdrrmo \
-    && chmod +x /usr/local/bin/mdrrmo-start
+    && printf '%s\n' 'ServerName localhost' \
+         'AliasMatch "^/health[.]php$" "/var/www/html/test-db.php"' \
+         '<Directory /var/www/html/public>' 'Options -Indexes' 'CGIPassAuth On' '</Directory>' \
+         > /etc/apache2/conf-available/mdrrmo.conf \
+    && a2enconf mdrrmo
 
 ENV PORT=10000
 EXPOSE 10000
-CMD ["/usr/local/bin/mdrrmo-start"]
+CMD ["sh", "-ec", "attempt=0; until php test-db.php --initialize; do attempt=$((attempt + 1)); if [ \"$attempt\" -ge 10 ]; then exit 1; fi; sleep 3; done; sed -i \"s/^Listen 80$/Listen ${PORT}/\" /etc/apache2/ports.conf; sed -i \"s/\\*:80>/*:${PORT}>/\" /etc/apache2/sites-available/000-default.conf; exec apache2-foreground"]

@@ -104,3 +104,42 @@ function findIncident(PDO $db, string $id): array|false
     }
     return $report;
 }
+
+function respond(int $status, array $body): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    echo json_encode($body, JSON_THROW_ON_ERROR);
+    exit;
+}
+
+function fail(int $status, string $code): never
+{
+    respond($status, ['error' => $code]);
+}
+
+function requireMethod(string $method): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== $method) {
+        header("Allow: {$method}");
+        fail(405, 'method_not_allowed');
+    }
+}
+
+function requireReadToken(): void
+{
+    $token = getenv('INCIDENT_READ_TOKEN');
+    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (!$token || !preg_match('/^Bearer (\S+)$/iD', $header, $match) || !hash_equals($token, $match[1])) {
+        header('WWW-Authenticate: Bearer');
+        fail(401, 'unauthorized');
+    }
+}
+
+function validIncidentId(mixed $value): bool
+{
+    return is_string($value) &&
+        preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/iD', $value) === 1;
+}

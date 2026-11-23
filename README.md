@@ -17,9 +17,9 @@ Use the token in the `Authorization: Bearer <INCIDENT_READ_TOKEN>` header for li
 
 ## Setup
 
-1. On Render, deploy `render.yaml` as a Blueprint for the GitHub repository. It provisions a Docker web service and an internal-only PostgreSQL database in Singapore.
-2. The Docker container initializes PostGIS and the incident schema at startup.
-3. Check `/health.php` for the PostgreSQL and PostGIS versions. Keep the Render database URL and read token in Render's environment variables.
+1. In Render, connect the GitHub repository to a Docker Web Service.
+2. In the service's Environment settings, set `DATABASE_URL` from the internal PostgreSQL URL and set `INCIDENT_READ_TOKEN`. If the site calls the API directly from a browser, set `HATCHABLE_ORIGIN` to the exact Hatchable site origin.
+3. Set the health check path to `/health.php`. The Docker container initializes PostGIS and the incident schema at startup.
 
 For local use, set `DATABASE_URL` to a PostgreSQL database with PostGIS available and enable the PHP `pdo_pgsql` extension. Run `php test-db.php --initialize`, then `php -S 127.0.0.1:8080 -t public`. Set `INCIDENT_READ_TOKEN` in your shell environment to try the read endpoints.
 
